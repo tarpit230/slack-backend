@@ -8,6 +8,7 @@ import Membership from "../models/membership.js";
 import { generateAccessToken, generateRefreshToken } from "../utilities/jwt-utils.js";
 
 export const signup = async (req: Request, res: Response) => {
+  
   const { name, email, password, workspaceName } = req.body;
 
   try {
