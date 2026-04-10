@@ -6,6 +6,10 @@ import User from "../models/users.js";
 import Workspace from "../models/workspace.js";
 import Membership from "../models/membership.js";
 import { generateAccessToken, generateRefreshToken } from "../utilities/jwt-utils.js";
+import jwt, { type JwtPayload } from "jsonwebtoken";
+
+
+const REFRESH_SECRET = process.env.REFRESH_SECRET as string;
 
 export const signup = async (req: Request, res: Response) => {
   
@@ -106,3 +110,34 @@ export const login = async (
       return res.status(500).json({ message: "Unknown error" });
     }
   };
+
+export const getAccessToken = (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if(!refreshToken){
+      return res.status(401).json({message: "Refresh token missing"});
+    }
+
+    const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as JwtPayload;
+
+    if (!decoded.userId || !decoded.email) {
+      return res.status(403).json({ message: "Invalid refresh token payload" });
+    }
+
+    const payload = {
+        userId: decoded.userId,
+        email: decoded.email,
+      };
+
+    const accessToken = generateAccessToken(payload);
+
+    return res.status(200).json({ accessToken });
+  } catch (error: any) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Refresh token expired" });
+    }
+
+    return res.status(403).json({ message: "Invalid refresh token" });
+  }
+}  
